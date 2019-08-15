@@ -1,0 +1,69 @@
+-- Baseado no código de FPGA Prototyping by VHDL Examples - Pong P. Chu
+-- Adaptacao para a placa DE1 da Altera
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_unsigned.all;
+
+entity SomadorFlutuante is
+   port(
+      --dp: in std_logic;
+		LEDR: out std_logic_vector(4 downto 0);
+		LEDG: out std_logic_vector(7 downto 0);
+		SW: in std_logic_vector(7 downto 0);
+		KEY: in std_logic_vector(2 downto 0)
+   );
+end SomadorFlutuante;
+
+architecture arch of SomadorFlutuante is
+	signal estado: std_logic_vector(2 downto 0);
+	signal sign1, sign2: std_logic;
+	signal exp1, exp2: std_logic_vector(3 downto 0);
+	signal frac1, frac2: std_logic_vector(7 downto 0);
+	signal sign_out: std_logic;
+	signal exp_out: std_logic_vector(3 downto 0);
+	signal frac_out: std_logic_vector(7 downto 0);
+	
+begin
+	process (KEY)
+		variable tmp: std_logic_vector(2 downto 0);
+			begin
+				if (KEY(1)='0') then
+					tmp := "000";
+				elsif (rising_edge(KEY(0))) then
+					tmp := tmp + "001";
+					if (tmp = "111") then
+						tmp := "000";
+				end if;
+					estado <= tmp;
+							
+		end process;
+	case estado is
+		when "000" =>
+			sign1 <= SW(0);
+		when "001" =>
+			exp1 <= SW(3 downto 0);
+		when "010" =>
+			frac1 <= SW(7 downto 0);
+		when "011" =>
+			sign2 <= SW(0);
+		when "100" =>
+			exp2 <= SW(3 downto 0);
+		when "101" =>
+			frac2 <= SW(7 downto 0);
+		when "110" =>
+			-- instantiate fp adder
+		    fp_add_unit: entity work.fp_adder
+				port map(
+					sign1=>sign1, sign2=>sign2, exp1=>exp1, exp2=>exp2,
+					frac1=>frac1, frac2=>frac2,
+					sign_out=>sign_out, exp_out=>exp_out,
+					frac_out=>frac_out
+				);
+			LEDR(4) <= sign_out;
+			LEDR(3 downto 0) <= exp_out;
+			LEDG(7 downto 0) <= frac_out;
+		
+		when others =>
+			;
+	
+end arch;
